@@ -2,6 +2,7 @@ package calculator;
 
 import camp.nextstep.edu.missionutils.Console;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Application {
     public static void main(String[] args) {
@@ -14,14 +15,14 @@ public class Application {
          * 덧셈
          * 커스텀 구분자 추출
          * */
-        StringCalculator calc = new StringCalculator();
 
-        Console.readLine();
+//        Console.readLine();
+
         System.out.println("덧셈할 문자열을 입력해 주세요.");
         String str = Console.readLine();
+        StringCalculator calc = new StringCalculator(str);
 
-        ArrayList<Integer> numbers = calc.extractNumbers(str);
-        int result = calc.addElements(numbers);
+        int result = calc.calculate();
 
         System.out.println("결과 : " + result);
         Console.close();
@@ -29,26 +30,36 @@ public class Application {
 }
 
 class StringCalculator {
-    public static void main(String[] args) {
+    private String originStr;
+    private ArrayList<Character> delimiter = new ArrayList<Character>(List.of(',', ':'));
+    private String str = null;
 
+    public StringCalculator(String str) {
+        originStr = str;
+        getDelimiter(); //구분자 추출
     }
 
     private int byteToInt(ArrayList<Byte> buffer) {
         byte[] arr = new byte[buffer.size()];
+
         for (int i = 0; i < buffer.size(); i++) {
             arr[i] = buffer.get(i);
+        }//
+        try {
+            return Integer.parseInt(new String(arr));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException();
         }
-        return Integer.parseInt(new String(arr));
     }
 
-    public ArrayList<Integer> extractNumbers(String str) {
+    private ArrayList<Integer> getNumbers() {
         // 커스텀 구분자를 추가할 것 까지 생각해서
         byte[] strBytes = str.getBytes();
         ArrayList<Byte> buffer = new ArrayList<Byte>();
         ArrayList<Integer> result = new ArrayList<Integer>();
 
         for (byte strByte : strBytes) {
-            if (strByte == ',' || strByte == ':') {
+            if (delimiter.contains((char) strByte)) {
                 result.add(byteToInt(buffer));
                 buffer.clear();
             } else {
@@ -62,11 +73,28 @@ class StringCalculator {
         return result;
     }
 
-    public int addElements(ArrayList<Integer> arr) {
+    public int calculate() {
+        ArrayList<Integer> arr = getNumbers();
         int result = 0;
         for (int num : arr) {
             result += num;
         }
         return result;
+    }
+
+    private void getDelimiter() {
+        if (!originStr.contains("\\n")) { // 커스텀 구분자가 없는 경우 스킵
+            str = originStr;
+            return;
+        }
+
+        String[] parts = originStr.split("\\\\n");
+
+        if (parts[0].length() != 3) { // "//;" 형식이 아닌 커스텀 구분자 지정문 필터링
+            throw new IllegalArgumentException();
+        }
+
+        delimiter = new ArrayList<Character>(List.of(parts[0].toCharArray()[parts[0].length() - 1]));
+        str = parts[1];
     }
 }
