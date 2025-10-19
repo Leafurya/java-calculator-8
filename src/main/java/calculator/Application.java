@@ -3,6 +3,7 @@ package calculator;
 import camp.nextstep.edu.missionutils.Console;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class Application {
     public static void main(String[] args) {
@@ -16,12 +17,10 @@ public class Application {
          * 커스텀 구분자 추출
          * */
 
-//        Console.readLine();
-
         System.out.println("덧셈할 문자열을 입력해 주세요.");
         String str = Console.readLine();
-        StringCalculator calc = new StringCalculator(str);
 
+        StringCalculator calc = new StringCalculator(str);
         int result = calc.calculate();
 
         System.out.println("결과 : " + result);
@@ -34,6 +33,8 @@ class StringCalculator {
     private ArrayList<Character> delimiter = new ArrayList<Character>(List.of(',', ':'));
     private String str = null;
 
+    private static final Pattern DELIMITER_FORMAT = Pattern.compile("^//.$");
+
     public StringCalculator(String str) {
         originStr = str;
         getDelimiter(); //구분자 추출
@@ -44,22 +45,28 @@ class StringCalculator {
 
         for (int i = 0; i < buffer.size(); i++) {
             arr[i] = buffer.get(i);
-        }//
+        }
         try {
-            return Integer.parseInt(new String(arr));
+            // 정수로 전환할 수 없는 문자열이라면 런타임 에러 발생
+            int result = Integer.parseInt(new String(arr));
+            if (result <= 0) {
+                // 숫자가 양수가 아니라면 런타임 에러 발생
+                throw new IllegalArgumentException();
+            }
+            return result;
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException();
         }
     }
 
     private ArrayList<Integer> getNumbers() {
-        // 커스텀 구분자를 추가할 것 까지 생각해서
         byte[] strBytes = str.getBytes();
-        ArrayList<Byte> buffer = new ArrayList<Byte>();
+        ArrayList<Byte> buffer = new ArrayList<Byte>(); // 정수로 변환할 문자열을 담을 버퍼
         ArrayList<Integer> result = new ArrayList<Integer>();
 
         for (byte strByte : strBytes) {
             if (delimiter.contains((char) strByte)) {
+                // 구분자를 만나면 buffer에 넣었던 문자를 정수로 변환하여 result에 저장
                 result.add(byteToInt(buffer));
                 buffer.clear();
             } else {
@@ -74,7 +81,8 @@ class StringCalculator {
     }
 
     public int calculate() {
-        ArrayList<Integer> arr = getNumbers();
+        // 덧셈 진행
+        ArrayList<Integer> arr = getNumbers(); // 숫자 추출
         int result = 0;
         for (int num : arr) {
             result += num;
@@ -83,14 +91,16 @@ class StringCalculator {
     }
 
     private void getDelimiter() {
-        if (!originStr.contains("\\n")) { // 커스텀 구분자가 없는 경우 스킵
+        if (!originStr.contains("\\n")) {
+            // 커스텀 구분자가 없는 경우 스킵
             str = originStr;
             return;
         }
 
         String[] parts = originStr.split("\\\\n");
 
-        if (parts[0].length() != 3) { // "//;" 형식이 아닌 커스텀 구분자 지정문 필터링
+        if (!DELIMITER_FORMAT.matcher(parts[0]).matches()) {
+            // "//;" 형식이 아닌 커스텀 구분자 지정문을 만나면 런타임 에러 발생
             throw new IllegalArgumentException();
         }
 
